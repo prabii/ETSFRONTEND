@@ -1,5 +1,6 @@
 const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
+const { logActivity } = require("../utils/logger");
 
 // Apply for a leave (Employee)
 exports.applyLeave = async (req, res) => {
@@ -41,6 +42,9 @@ exports.applyLeave = async (req, res) => {
     });
 
     await leave.save();
+
+    // Log activity
+    await logActivity(userId, "SUBMIT_LEAVE_APPLICATION", "Leave", leave._id, { leaveType, days: requestedDays });
 
     res.status(201).json({
       success: true,
@@ -136,6 +140,9 @@ exports.updateLeaveStatus = async (req, res) => {
     }
     
     await leave.save();
+
+    // Log activity
+    await logActivity(req.user.id, "UPDATE_LEAVE_STATUS", "Leave", leave._id, { status });
 
     res.status(200).json({
       success: true,

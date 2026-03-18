@@ -1,5 +1,6 @@
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const { logActivity } = require("../utils/logger");
 
 // GET /api/employees
 const getEmployees = async (req, res) => {
@@ -91,6 +92,9 @@ const createEmployee = async (req, res) => {
     employee.userId = user._id;
     await employee.save();
 
+    // Log activity
+    await logActivity(req.user.id, "CREATE_EMPLOYEE", "Employee", employee._id, { name: employee.name, employeeId: employee.employeeId });
+
     res.status(201).json({
       success: true,
       message: "Employee created successfully.",
@@ -122,6 +126,9 @@ const updateEmployee = async (req, res) => {
       await User.findByIdAndUpdate(employee.userId, { name, email });
     }
 
+    // Log activity
+    await logActivity(req.user.id, "UPDATE_EMPLOYEE", "Employee", employee._id, { name: employee.name });
+
     res.status(200).json({ success: true, message: "Employee updated.", employee });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error: " + error.message });
@@ -145,6 +152,9 @@ const toggleStatus = async (req, res) => {
       await User.findByIdAndUpdate(employee.userId, { isActive: newStatus === "active" });
     }
 
+    // Log activity
+    await logActivity(req.user.id, "TOGGLE_EMPLOYEE_STATUS", "Employee", employee._id, { status: newStatus });
+
     res.status(200).json({
       success: true,
       message: `Employee ${newStatus === "active" ? "activated" : "deactivated"} successfully.`,
@@ -167,6 +177,9 @@ const permanentDelete = async (req, res) => {
     if (employee.userId) {
       await User.findByIdAndDelete(employee.userId);
     }
+
+    // Log activity
+    await logActivity(req.user.id, "DELETE_EMPLOYEE", "Employee", employee._id, { name: employee.name, employeeId: employee.employeeId });
 
     res.status(200).json({ success: true, message: "Employee permanently deleted." });
   } catch (error) {

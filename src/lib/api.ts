@@ -119,6 +119,36 @@ export const settingsApi = {
     request<{ settings: OfficeSettings }>("/settings", { method: "PUT", body: JSON.stringify(data) }),
 };
 
+// ─── ACTIVITY LOGS ────────────────────────────────────────────────────────────
+export const activityLogsApi = {
+  getAll: (params?: { page?: number; limit?: number; action?: string; user?: string }) => {
+    const qs = new URLSearchParams(params as any).toString();
+    return request<{ logs: any[]; totalLogs: number; totalPages: number; currentPage: number }>(
+      `/activity-logs${qs ? `?${qs}` : ""}`
+    );
+  },
+};
+
+// ─── WORK REPORTS ─────────────────────────────────────────────────────────────
+export const workReportsApi = {
+  getAll: (params?: { page?: number; limit?: number; status?: string; employeeId?: string }) => {
+    const qs = new URLSearchParams(params as any).toString();
+    return request<{ reports: any[]; totalReports: number; totalPages: number; currentPage: number }>(
+      `/work-reports${qs ? `?${qs}` : ""}`
+    );
+  },
+  submit: (data: { tasksCompleted: string; hoursWorked: number; date?: string }) =>
+    request<{ message: string; report: any }>("/work-reports", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  review: (id: string, data: { status: string; managerRemarks: string }) =>
+    request<{ message: string; report: any }>(`/work-reports/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+};
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 export interface Employee {
   _id: string;

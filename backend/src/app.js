@@ -7,6 +7,8 @@ const employeeRoutes = require("./routes/employee.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const qrRoutes = require("./routes/qr.routes");
 const reportsRoutes = require("./routes/reports.routes");
+const activityRoutes = require("./routes/activity.routes");
+const workReportRoutes = require("./routes/workReport.routes");
 const settingsRoutes = require("./routes/settings.routes");
 const leaveRoutes = require("./routes/leave.routes");
 
@@ -57,6 +59,8 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/qr", qrRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/activity-logs", activityRoutes);
+app.use("/api/work-reports", workReportRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/leaves", leaveRoutes);
 

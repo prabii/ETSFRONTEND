@@ -12,6 +12,8 @@ import {
   ScanLine,
   History,
   CalendarDays,
+  Activity,
+  ScrollText,
 } from "lucide-react";
 
 const adminNav = [
@@ -21,6 +23,8 @@ const adminNav = [
   { label: "Attendance", icon: ClipboardList, path: "/admin/attendance" },
   { label: "Leaves", icon: CalendarDays, path: "/admin/leaves" },
   { label: "Reports", icon: FileBarChart, path: "/admin/reports" },
+  { label: "Work Reports", icon: ScrollText, path: "/admin/work-reports" },
+  { label: "Activity Logs", icon: Activity, path: "/admin/activity-logs" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
@@ -28,6 +32,7 @@ const employeeNav = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/employee/dashboard" },
   { label: "Scan QR", icon: ScanLine, path: "/employee/scan" },
   { label: "Leaves", icon: CalendarDays, path: "/employee/leaves" },
+  { label: "Work Reports", icon: ScrollText, path: "/employee/work-reports" },
 ];
 
 const hrNav = [
@@ -37,6 +42,7 @@ const hrNav = [
   { label: "Attendance", icon: ClipboardList, path: "/hr/attendance" },
   { label: "Leaves", icon: CalendarDays, path: "/hr/leaves" },
   { label: "Reports", icon: FileBarChart, path: "/hr/reports" },
+  { label: "Work Reports", icon: ScrollText, path: "/hr/work-reports" },
   { label: "Settings", icon: Settings, path: "/hr/settings" },
 ];
 
