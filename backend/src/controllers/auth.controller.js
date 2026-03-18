@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { logActivity } = require("../utils/logger");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -35,8 +36,8 @@ const login = async (req, res) => {
 
     const token = signToken(user._id);
 
-    // Remove password from response
-    user.password = undefined;
+    // Log successful login
+    await logActivity(user._id, "LOGIN", "User", user._id, { email: user.email }, req.ip);
 
     res.status(200).json({
       success: true,

@@ -16,6 +16,8 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EmployeeLeavesPage from "./pages/EmployeeLeavesPage";
 import AdminLeavesPage from "./pages/AdminLeavesPage";
 import HRDashboard from "./pages/HRDashboard";
+import ActivityLogsPage from "./pages/ActivityLogsPage";
+import WorkReportsPage from "./pages/WorkReportsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const AppRoutes = () => (
     <Route path="/admin/attendance" element={<ProtectedRoute role="admin"><AttendancePage /></ProtectedRoute>} />
     <Route path="/admin/leaves" element={<ProtectedRoute role="admin"><AdminLeavesPage /></ProtectedRoute>} />
     <Route path="/admin/reports" element={<ProtectedRoute role="admin"><ReportsPage /></ProtectedRoute>} />
+    <Route path="/admin/activity-logs" element={<ProtectedRoute role="admin"><ActivityLogsPage /></ProtectedRoute>} />
+    <Route path="/admin/work-reports" element={<ProtectedRoute role="admin"><WorkReportsPage /></ProtectedRoute>} />
     <Route path="/admin/settings" element={<ProtectedRoute role="admin"><SettingsPage /></ProtectedRoute>} />
     <Route path="/hr/dashboard" element={<ProtectedRoute role="hr"><HRDashboard /></ProtectedRoute>} />
     <Route path="/hr/employees" element={<ProtectedRoute role="hr"><EmployeesPage /></ProtectedRoute>} />
@@ -49,10 +53,12 @@ const AppRoutes = () => (
     <Route path="/hr/attendance" element={<ProtectedRoute role="hr"><AttendancePage /></ProtectedRoute>} />
     <Route path="/hr/leaves" element={<ProtectedRoute role="hr"><AdminLeavesPage /></ProtectedRoute>} />
     <Route path="/hr/reports" element={<ProtectedRoute role="hr"><ReportsPage /></ProtectedRoute>} />
+    <Route path="/hr/work-reports" element={<ProtectedRoute role="hr"><WorkReportsPage /></ProtectedRoute>} />
     <Route path="/hr/settings" element={<ProtectedRoute role="hr"><SettingsPage /></ProtectedRoute>} />
     <Route path="/employee/scan" element={<ProtectedRoute role="employee"><ScannerPage /></ProtectedRoute>} />
     <Route path="/employee/dashboard" element={<ProtectedRoute role="employee"><EmployeeDashboard /></ProtectedRoute>} />
     <Route path="/employee/leaves" element={<ProtectedRoute role="employee"><EmployeeLeavesPage /></ProtectedRoute>} />
+    <Route path="/employee/work-reports" element={<ProtectedRoute role="employee"><WorkReportsPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
