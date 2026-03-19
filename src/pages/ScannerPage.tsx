@@ -32,13 +32,14 @@ export default function ScannerPage() {
     checkInTime?: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [scannedToken, setScannedToken] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const scannedToken = useRef<string>("");
 
   // Step 1: Start camera scanner
   useEffect(() => {
     if (state !== "scanning") return;
 
+    let stopped = false;
     const scanner = new Html5Qrcode("qr-reader");
     scannerRef.current = scanner;
 
@@ -46,9 +47,11 @@ export default function ScannerPage() {
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 220, height: 220 } },
       (decodedText) => {
-        scannedToken.current = decodedText;
+        if (stopped) return;
+        stopped = true;
         scanner.stop().catch(() => {});
         scannerRef.current = null;
+        setScannedToken(decodedText);
         setState("verifying");
       },
       () => {}
@@ -58,15 +61,14 @@ export default function ScannerPage() {
     });
 
     return () => {
+      stopped = true;
       scanner.stop().catch(() => {});
     };
   }, [state]);
 
   // Step 2: After QR scanned, get location and call API
   useEffect(() => {
-    if (state !== "verifying" || !scannedToken.current) return;
-
-    const token = scannedToken.current;
+    if (state !== "verifying" || !scannedToken) return;
 
     if (!navigator.geolocation) {
       setState("error");
@@ -87,7 +89,7 @@ export default function ScannerPage() {
             )
           );
           const res = await attendanceApi.checkIn({
-            qrToken: token,
+            qrToken: scannedToken,
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
@@ -113,7 +115,7 @@ export default function ScannerPage() {
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
-  }, [state]);
+  }, [state, scannedToken]);
 
   const handleScan = () => setState("requesting");
 
@@ -131,7 +133,7 @@ export default function ScannerPage() {
   const reset = () => {
     scannerRef.current?.stop().catch(() => {});
     scannerRef.current = null;
-    scannedToken.current = "";
+    setScannedToken("");
     setState("idle");
     setResult(null);
     setErrorMsg("");
