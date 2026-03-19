@@ -34,79 +34,79 @@ export default function ScannerPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  // Start camera AFTER the #qr-reader div is rendered
   useEffect(() => {
-    return () => {
-      scannerRef.current?.stop().catch(() => {});
-    };
-  }, []);
+    if (state !== "scanning") return;
 
-  const handleScan = async () => {
-    setState("scanning");
-    try {
-      const scanner = new Html5Qrcode("qr-reader");
-      scannerRef.current = scanner;
+    const scanner = new Html5Qrcode("qr-reader");
+    scannerRef.current = scanner;
 
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        async (decodedText) => {
-          await scanner.stop();
-          scannerRef.current = null;
-          setState("verifying");
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      async (decodedText) => {
+        await scanner.stop().catch(() => {});
+        scannerRef.current = null;
+        setState("verifying");
 
-          if (!navigator.geolocation) {
-            setState("error");
-            setErrorMsg("Geolocation is not supported by your browser.");
-            return;
-          }
+        if (!navigator.geolocation) {
+          setState("error");
+          setErrorMsg("Geolocation is not supported by your browser.");
+          return;
+        }
 
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              try {
-                const settings = await settingsApi.get();
-                const distance = Math.round(
-                  getDistance(
-                    position.coords.latitude,
-                    position.coords.longitude,
-                    settings.settings.lat,
-                    settings.settings.lng
-                  )
-                );
-                const res = await attendanceApi.checkIn({
-                  qrToken: decodedText,
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude,
-                });
-                const now = new Date();
-                setResult({
-                  time: now.toLocaleTimeString(),
-                  date: now.toLocaleDateString(),
-                  distance,
-                  action: res.action,
-                  workedHours: res.record?.workedHours,
-                  shortageHours: res.record?.shortageHours,
-                  checkInTime: res.record?.checkInTime,
-                });
-                setState("success");
-              } catch (e: unknown) {
-                setState("error");
-                setErrorMsg(e instanceof Error ? e.message : "Check-in failed.");
-              }
-            },
-            () => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const settings = await settingsApi.get();
+              const distance = Math.round(
+                getDistance(
+                  position.coords.latitude,
+                  position.coords.longitude,
+                  settings.settings.lat,
+                  settings.settings.lng
+                )
+              );
+              const res = await attendanceApi.checkIn({
+                qrToken: decodedText,
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              });
+              const now = new Date();
+              setResult({
+                time: now.toLocaleTimeString(),
+                date: now.toLocaleDateString(),
+                distance,
+                action: res.action,
+                workedHours: res.record?.workedHours,
+                shortageHours: res.record?.shortageHours,
+                checkInTime: res.record?.checkInTime,
+              });
+              setState("success");
+            } catch (e: unknown) {
               setState("error");
-              setErrorMsg("Unable to retrieve your location. Please enable GPS.");
-            },
-            { enableHighAccuracy: true }
-          );
-        },
-        () => {}
-      );
-    } catch {
+              setErrorMsg(e instanceof Error ? e.message : "Check-in failed.");
+            }
+          },
+          () => {
+            setState("error");
+            setErrorMsg("Unable to retrieve your location. Please enable GPS.");
+          },
+          { enableHighAccuracy: true }
+        );
+      },
+      () => {}
+    ).catch(() => {
       setState("error");
-      setErrorMsg("Camera access denied or not available.");
-    }
-  };
+      setErrorMsg("Camera access denied. Please allow camera permission and try again.");
+    });
+
+    return () => {
+      scanner.stop().catch(() => {});
+    };
+  }, [state]);
+
+  const handleScan = () => setState("scanning");
 
   const reset = () => {
     scannerRef.current?.stop().catch(() => {});
