@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { settingsApi, attendanceApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanLine, MapPin, CheckCircle2, XCircle, Camera } from "lucide-react";
+import { ScanLine, MapPin, CheckCircle2, XCircle, Camera, ShieldCheck } from "lucide-react";
 import logo from "@/assets/zenithyuga-logo.png";
 import { useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 
-type ScanState = "idle" | "scanning" | "verifying" | "success" | "error";
+type ScanState = "idle" | "requesting" | "scanning" | "verifying" | "success" | "error";
 
 function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371e3;
@@ -106,7 +106,18 @@ export default function ScannerPage() {
     };
   }, [state]);
 
-  const handleScan = () => setState("scanning");
+  const handleScan = () => setState("requesting");
+
+  const handleAllowCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      stream.getTracks().forEach((t) => t.stop()); // release immediately, Html5Qrcode will reopen
+      setState("scanning");
+    } catch {
+      setState("error");
+      setErrorMsg("Camera access denied. Please allow camera permission in your browser settings and try again.");
+    }
+  };
 
   const reset = () => {
     scannerRef.current?.stop().catch(() => {});
@@ -141,6 +152,39 @@ export default function ScannerPage() {
                 <button onClick={handleScan} className="w-full py-3 rounded-xl zy-gradient text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2">
                   <Camera className="h-4 w-4" /> Start Scanning
                 </button>
+              </motion.div>
+            )}
+
+            {state === "requesting" && (
+              <motion.div key="requesting" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center space-y-6">
+                <div className="inline-flex h-20 w-20 rounded-2xl bg-primary/10 items-center justify-center mx-auto">
+                  <ShieldCheck className="h-10 w-10 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold mb-2">Camera Permission</h1>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    To mark your attendance, the app needs access to your <strong>camera</strong> to scan the office QR code.
+                  </p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
+                  <p className="text-xs font-medium text-foreground">What we access:</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Camera className="h-4 w-4 text-primary shrink-0" />
+                    <span>Camera — only while scanning, never recorded or stored</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span>Location — to verify you are at the office</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <button onClick={handleAllowCamera} className="w-full py-3 rounded-xl zy-gradient text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2">
+                    <Camera className="h-4 w-4" /> Allow Camera & Continue
+                  </button>
+                  <button onClick={reset} className="w-full py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             )}
 
