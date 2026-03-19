@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { settingsApi, attendanceApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScanLine, MapPin, CheckCircle2, XCircle, Camera } from "lucide-react";
 import logo from "@/assets/zenithyuga-logo.png";
 import { useNavigate } from "react-router-dom";
+import { Html5Qrcode } from "html5-qrcode";
 
 type ScanState = "idle" | "scanning" | "verifying" | "success" | "error";
 
@@ -31,78 +32,85 @@ export default function ScannerPage() {
     checkInTime?: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
-  const handleScan = () => {
+  useEffect(() => {
+    return () => {
+      scannerRef.current?.stop().catch(() => {});
+    };
+  }, []);
+
+  const handleScan = async () => {
     setState("scanning");
+    try {
+      const scanner = new Html5Qrcode("qr-reader");
+      scannerRef.current = scanner;
 
-    // Fetch active QR token from backend first
-    import("@/lib/api").then(({ qrApi }) => {
-      qrApi.getActive()
-        .then((qrRes) => {
-          const qrToken = qrRes.qrToken.token;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        async (decodedText) => {
+          await scanner.stop();
+          scannerRef.current = null;
+          setState("verifying");
 
-          setTimeout(() => {
-            setState("verifying");
+          if (!navigator.geolocation) {
+            setState("error");
+            setErrorMsg("Geolocation is not supported by your browser.");
+            return;
+          }
 
-            if (!navigator.geolocation) {
-              setState("error");
-              setErrorMsg("Geolocation is not supported by your browser.");
-              return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-              async (position) => {
-                try {
-                  // Get office settings for distance display
-                  const settings = await settingsApi.get();
-                  const distance = Math.round(
-                    getDistance(
-                      position.coords.latitude,
-                      position.coords.longitude,
-                      settings.settings.lat,
-                      settings.settings.lng
-                    )
-                  );
-
-                  // Call real check-in API
-                  const res = await attendanceApi.checkIn({
-                    qrToken,
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                  });
-
-                  const now = new Date();
-                  setResult({
-                    time: now.toLocaleTimeString(),
-                    date: now.toLocaleDateString(),
-                    distance,
-                    action: res.action,
-                    workedHours: res.record?.workedHours,
-                    shortageHours: res.record?.shortageHours,
-                    checkInTime: res.record?.checkInTime,
-                  });
-                  setState("success");
-                } catch (e: unknown) {
-                  setState("error");
-                  setErrorMsg(e instanceof Error ? e.message : "Check-in failed.");
-                }
-              },
-              () => {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              try {
+                const settings = await settingsApi.get();
+                const distance = Math.round(
+                  getDistance(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    settings.settings.lat,
+                    settings.settings.lng
+                  )
+                );
+                const res = await attendanceApi.checkIn({
+                  qrToken: decodedText,
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                });
+                const now = new Date();
+                setResult({
+                  time: now.toLocaleTimeString(),
+                  date: now.toLocaleDateString(),
+                  distance,
+                  action: res.action,
+                  workedHours: res.record?.workedHours,
+                  shortageHours: res.record?.shortageHours,
+                  checkInTime: res.record?.checkInTime,
+                });
+                setState("success");
+              } catch (e: unknown) {
                 setState("error");
-                setErrorMsg("Unable to retrieve your location. Please enable GPS.");
-              },
-              { enableHighAccuracy: true }
-            );
-          }, 2000);
-        })
-        .catch(() => {
-          setState("error");
-          setErrorMsg("No active QR code found. Ask admin to generate one.");
-        });
-    });
+                setErrorMsg(e instanceof Error ? e.message : "Check-in failed.");
+              }
+            },
+            () => {
+              setState("error");
+              setErrorMsg("Unable to retrieve your location. Please enable GPS.");
+            },
+            { enableHighAccuracy: true }
+          );
+        },
+        () => {}
+      );
+    } catch {
+      setState("error");
+      setErrorMsg("Camera access denied or not available.");
+    }
   };
 
   const reset = () => {
+    scannerRef.current?.stop().catch(() => {});
+    scannerRef.current = null;
     setState("idle");
     setResult(null);
     setErrorMsg("");
@@ -136,15 +144,20 @@ export default function ScannerPage() {
               </motion.div>
             )}
 
-            {(state === "scanning" || state === "verifying") && (
-              <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
-                <div className="h-64 bg-muted rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-primary/5" />
-                  <div className="z-10 space-y-3">
+            {state === "scanning" && (
+              <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">Point your camera at the office QR code</p>
+                <div id="qr-reader" className="rounded-2xl overflow-hidden w-full" />
+                <button onClick={reset} className="text-sm text-destructive hover:underline">Cancel</button>
+              </motion.div>
+            )}
+
+            {state === "verifying" && (
+              <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
+                <div className="h-64 bg-muted rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center">
+                  <div className="space-y-3">
                     <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
-                    <p className="text-sm text-muted-foreground">
-                      {state === "scanning" ? "Fetching QR Code..." : "Verifying location..."}
-                    </p>
+                    <p className="text-sm text-muted-foreground">Verifying location...</p>
                   </div>
                 </div>
               </motion.div>
