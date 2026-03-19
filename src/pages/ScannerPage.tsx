@@ -139,6 +139,10 @@ export default function ScannerPage() {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
+
+          {/* qr-reader is always in DOM so html5-qrcode can find it on mobile */}
+          <div id="qr-reader" className={`rounded-2xl overflow-hidden w-full ${state === "scanning" ? "block" : "hidden"}`} style={{ minHeight: "300px" }} />
+
           <AnimatePresence mode="wait">
             {state === "idle" && (
               <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
@@ -189,9 +193,8 @@ export default function ScannerPage() {
             )}
 
             {state === "scanning" && (
-              <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-4">
+              <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-3 mt-3">
                 <p className="text-sm text-muted-foreground">Point your camera at the office QR code</p>
-                <div id="qr-reader" className="rounded-2xl overflow-hidden w-full" />
                 <button onClick={reset} className="text-sm text-destructive hover:underline">Cancel</button>
               </motion.div>
             )}
@@ -231,7 +234,7 @@ export default function ScannerPage() {
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Check-out Time</span><span className="font-medium">{result.time}</span></div>
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Worked</span><span className="font-medium">{result.workedHours} hrs</span></div>
                       {(result.shortageHours || 0) > 0 && (
-                         <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shortage</span><span className="font-medium text-destructive">{result.shortageHours} hrs</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shortage</span><span className="font-medium text-destructive">{result.shortageHours} hrs</span></div>
                       )}
                     </>
                   )}
