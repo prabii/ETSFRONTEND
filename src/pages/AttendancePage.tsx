@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { attendanceApi, AttendanceRecord } from "@/lib/api";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 
 export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -11,7 +11,22 @@ export default function AttendancePage() {
   const [deptFilter, setDeptFilter] = useState("");
   const [search, setSearch] = useState("");
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const departments = [...new Set(records.map((a) => a.department))];
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this attendance record? This cannot be undone.")) return;
+    setDeletingId(id);
+    try {
+      await attendanceApi.delete(id);
+      setRecords((prev) => prev.filter((r) => r._id !== id));
+      setTotal((prev) => prev - 1);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to delete record.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -56,20 +71,23 @@ export default function AttendancePage() {
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Employee</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Check-in</th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground hidden md:table-cell">Check-out</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground hidden md:table-cell">Location</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">Loading...</td></tr>
+                  <tr><td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">Loading...</td></tr>
                 ) : records.length === 0 ? (
-                  <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">No records found.</td></tr>
+                  <tr><td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">No records found.</td></tr>
                 ) : records.map((r) => (
                   <tr key={r._id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3 font-medium">{r.employeeName}</td>
                     <td className="px-5 py-3 text-muted-foreground">{r.date}</td>
                     <td className="px-5 py-3 text-muted-foreground">{r.checkInTime || "—"}</td>
+                    <td className="px-5 py-3 text-muted-foreground hidden md:table-cell">{r.checkOutTime || "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground hidden md:table-cell">
                       {r.checkInLocation?.distance != null ? `Office - Verified (${r.checkInLocation.distance}m)` : "—"}
                     </td>
@@ -81,6 +99,16 @@ export default function AttendancePage() {
                       }`}>
                         {r.status}
                       </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => handleDelete(r._id)}
+                        disabled={deletingId === r._id}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                        title="Delete record"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}

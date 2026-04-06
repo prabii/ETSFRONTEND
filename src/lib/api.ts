@@ -87,6 +87,8 @@ export const attendanceApi = {
     }>("/attendance/checkin", { method: "POST", body: JSON.stringify(data) }),
   checkOut: (id: string) =>
     request(`/attendance/${id}/checkout`, { method: "PUT" }),
+  delete: (id: string) =>
+    request(`/attendance/${id}`, { method: "DELETE" }),
 };
 
 // ─── QR ───────────────────────────────────────────────────────────────────────

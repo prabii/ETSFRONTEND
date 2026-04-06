@@ -49,7 +49,7 @@ export default function ScannerPage() {
       (decodedText) => {
         if (stopped) return;
         stopped = true;
-        scanner.stop().catch(() => {});
+        try { scanner.stop().catch(() => {}); } catch {}
         scannerRef.current = null;
         setScannedToken(decodedText);
         setState("verifying");
@@ -62,7 +62,7 @@ export default function ScannerPage() {
 
     return () => {
       stopped = true;
-      scanner.stop().catch(() => {});
+      try { scanner.stop().catch(() => {}); } catch {}
     };
   }, [state]);
 
@@ -131,7 +131,7 @@ export default function ScannerPage() {
   };
 
   const reset = () => {
-    scannerRef.current?.stop().catch(() => {});
+    try { scannerRef.current?.stop().catch(() => {}); } catch {}
     scannerRef.current = null;
     setScannedToken("");
     setState("idle");
